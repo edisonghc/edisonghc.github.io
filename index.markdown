@@ -4,5 +4,6 @@
 
 layout: home
 ---
+<img src="/asset/me/me.jpg" width="40%" />
 
-Welcome to my blog
+I am Haocheng Gu. Here is my [CV](/asset/me/Gu_CV_20221206.pdf). Welcome to my blog :)
