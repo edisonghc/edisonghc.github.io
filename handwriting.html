@@ -1,0 +1,128 @@
+---
+layout: default
+title: Handwriting Recognition
+---
+
+<div id="root"></div>
+
+<!-- React and Babel CDN -->
+<script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+<!-- ONNX Runtime Web -->
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.15.1/dist/ort.min.js"></script>
+
+<script type="text/babel">
+class HandwritingApp extends React.Component {
+  state = { prediction: "", isDrawing: false };
+  
+  canvasRef = React.createRef();
+  ctx = null;
+  model = null;
+
+  componentDidMount() {
+    this.initializeCanvas();
+    this.loadModel();
+  }
+
+  initializeCanvas() {
+    const canvas = this.canvasRef.current;
+    this.ctx = canvas.getContext('2d');
+    this.ctx.fillStyle = 'black';
+    this.ctx.fillRect(0, 0, 280, 280);
+  }
+
+  async loadModel() {
+    this.model = await ort.InferenceSession.create("mnist.onnx");
+  }
+
+  handleMouseDown = (e) => {
+    this.setState({ isDrawing: true });
+    this.draw(e.clientX, e.clientY);
+  };
+
+  // Add similar handlers for mouse move/up/touch events
+
+  preprocessImage() {
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = 28;
+    tempCanvas.height = 28;
+    tempCtx.drawImage(this.canvasRef.current, 0, 0, 28, 28);
+    
+    const imgData = tempCtx.getImageData(0, 0, 28, 28);
+    const input = new Float32Array(1 * 1 * 28 * 28);
+    
+    // Normalize and convert to grayscale
+    for(let i = 0; i < 784; i++) {
+      input[i] = imgData.data[i * 4] / 255;
+    }
+    
+    return new ort.Tensor('float32', input, [1, 1, 28, 28]);
+  }
+
+  recognize = async () => {
+    const input = this.preprocessImage();
+    const results = await this.model.run({ input });
+    const prediction = results.output.data.argMax();
+    this.setState({ prediction: `Prediction: ${prediction}` });
+  };
+
+  erase = () => {
+    this.ctx.fillRect(0, 0, 280, 280);
+    this.setState({ prediction: "" });
+  };
+
+  render() {
+    return (
+      <div className="handwriting-container">
+        <canvas 
+          ref={this.canvasRef}
+          width="280" 
+          height="280"
+          onMouseDown={this.handleMouseDown}
+          // Add other mouse/touch events
+        />
+        <div className="controls">
+          <button onClick={this.recognize}>Recognize</button>
+          <button onClick={this.erase}>Erase</button>
+        </div>
+        <div className="prediction">{this.state.prediction}</div>
+      </div>
+    );
+  }
+}
+
+ReactDOM.render(<HandwritingApp />, document.getElementById('root'));
+</script>
+
+<style>
+.handwriting-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+canvas {
+  border: 2px solid #333;
+  background-color: white;
+  touch-action: none;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+.prediction {
+  font-size: 24px;
+  font-weight: bold;
+}
+</style>
