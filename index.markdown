@@ -26,6 +26,6 @@ ___
 
 ## 2022
 
-**Haocheng Gu**, Hao Cheng, Anjun Ma, Yang Li, Juexin Wang, Dong Xu, Qin Ma, scGNN 2.0: a graph neural network tool for imputation and clustering of single-cell RNA-Seq data, Bioinformatics, Volume 38, Issue 23, 1 December 2022, Pages 5322–5325, [DOI](https://doi.org/10.1093/bioinformatics/btac684) | [PDF](https://bpb-us-w2.wpmucdn.com/u.osu.edu/dist/0/72768/files/2022/10/btac684.pdf) | [Code](https://github.com/OSU-BMBL/scGNN2.0)
+**Haocheng Gu**, Hao Cheng, Anjun Ma, Yang Li, Juexin Wang, Dong Xu, Qin Ma, scGNN 2.0: a graph neural network tool for imputation and clustering of single-cell RNA-Seq data, Bioinformatics, Volume 38, Issue 23, 1 December 2022, Pages 5322–5325, [DOI](https://doi.org/10.1093/bioinformatics/btac684) | [PDF](https://academic.oup.com/bioinformatics/article-pdf/38/23/5322/47466040/btac684.pdf) | [Code](https://github.com/OSU-BMBL/scGNN2.0)
 
 ___
