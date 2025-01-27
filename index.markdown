@@ -9,7 +9,7 @@ layout: default
 
 # Bio
 
-I am a Data Scientist at Aon Consulting where I help our clients provide better healthcare benefits to their employees. I earned a bachelor's degree from the Ohio State University in 2021. With a passion for AI, I am currently applying for graduate schools for Fall 2023. Here is my [CV](/asset/me/Gu_CV_20221206.pdf).
+I am a Data Scientist at Aon Consulting where I help our clients provide better healthcare benefits to their employees. I earned a bachelor's degree from the Ohio State University in 2021. With a passion for AI, I am currently applying for graduate schools for Fall 2026. Here is my [CV](/asset/me/Gu_CV_20221206.pdf).
 
 ___
 
