@@ -1,0 +1,228 @@
+---
+layout: default
+title: Handwriting Recognition
+---
+
+<div id="root"></div>
+
+<!-- React and Babel CDN -->
+<script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+<!-- ONNX Runtime Web -->
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.15.1/dist/ort.min.js"></script>
+
+<script type="text/babel">
+class HandwritingApp extends React.Component {
+  state = { prediction: "", isDrawing: false };
+  
+  canvasRef = React.createRef();
+  ctx = null;
+  model = null;
+
+  componentDidMount() {
+    this.initializeCanvas();
+    this.loadModel();
+  }
+
+  initializeCanvas() {
+    const canvas = this.canvasRef.current;
+    this.ctx = canvas.getContext('2d');
+    // Set white background instead of black
+    this.ctx.fillStyle = 'white';
+    this.ctx.fillRect(0, 0, 280, 280);
+    // Set drawing styles
+    this.ctx.lineWidth = 25;
+    this.ctx.lineCap = 'round';
+    this.ctx.strokeStyle = 'black';
+  }
+
+async loadModel() {
+  try {
+    this.model = await ort.InferenceSession.create("/asset/models/mnist.onnx");
+    console.log("Model loaded successfully");
+    console.log("Input names:", this.model.inputNames);
+    console.log("Output names:", this.model.outputNames);
+  } catch (error) {
+    console.error("Model loading failed:", error);
+  }
+}
+
+  // Add all event handlers
+  handleMouseDown = (e) => {
+    const rect = this.canvasRef.current.getBoundingClientRect();
+    this.ctx.beginPath();
+    this.ctx.moveTo(
+      e.clientX - rect.left,
+      e.clientY - rect.top
+    );
+    this.setState({ isDrawing: true });
+  };
+
+  handleMouseMove = (e) => {
+    if (!this.state.isDrawing) return;
+    const rect = this.canvasRef.current.getBoundingClientRect();
+    this.ctx.lineTo(
+      e.clientX - rect.left,
+      e.clientY - rect.top
+    );
+    this.ctx.stroke();
+  };
+
+  handleMouseUp = () => {
+    this.setState({ isDrawing: false });
+    this.ctx.closePath();
+  };
+
+  // Touch event handlers
+  handleTouchStart = (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    this.handleMouseDown(touch);
+  };
+
+  handleTouchMove = (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    this.handleMouseMove(touch);
+  }
+
+  preprocessImage() {
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = 28;
+    tempCanvas.height = 28;
+    tempCtx.drawImage(this.canvasRef.current, 0, 0, 28, 28);
+    
+    const imgData = tempCtx.getImageData(0, 0, 28, 28);
+    const input = new Float32Array(1 * 1 * 28 * 28);
+    
+    for(let i = 0; i < 28 * 28; i++) {
+    // Get RGB values
+    const r = imgData.data[i * 4];
+    const g = imgData.data[i * 4 + 1];
+    const b = imgData.data[i * 4 + 2];
+    
+    // Convert to grayscale using luminance formula
+    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+    
+    // Invert and normalize to [0, 1] range
+    input[i] = (255 - gray) / 255;
+    }
+    
+    return new ort.Tensor('float32', input, [1, 1, 28, 28]);
+  }
+
+  // Add this method to visualize preprocessed image
+    drawTensorPreview = (data, container) => {
+    const previewCanvas = document.createElement('canvas');
+    previewCanvas.width = 28;
+    previewCanvas.height = 28;
+    const ctx = previewCanvas.getContext('2d');
+
+    const imageData = new ImageData(28, 28);
+    for(let i = 0; i < 784; i++) {
+        const val = Math.abs(data[i] * 255);
+        imageData.data[i*4] = val;     // R
+        imageData.data[i*4+1] = val;   // G
+        imageData.data[i*4+2] = val;   // B
+        imageData.data[i*4+3] = 255;   // Alpha
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    container.appendChild(previewCanvas);
+    };
+
+  recognize = async () => {
+    try {
+      const input = this.preprocessImage();
+      
+    //   const preview = document.createElement('div');
+    //   preview.innerHTML = '<h4>Processed Image:</h4>';
+    //   document.body.appendChild(preview);
+    //   this.drawTensorPreview(input.data, preview);
+
+      const results = await this.model.run({ 'Input3': input });
+
+      const output = results['Plus214_Output_0'].data;
+      const prediction = Array.from(output).indexOf(Math.max(...output));
+      this.setState({ prediction: `Prediction: ${prediction}` });
+    } catch (error) {
+      console.error("Recognition failed:", error);
+      this.setState({ prediction: "Error recognizing digit" });
+    }
+  };
+
+  erase = () => {
+    if (!this.ctx) return;
+    
+    // Reset canvas to white
+    this.ctx.fillStyle = 'white';
+    this.ctx.fillRect(0, 0, 280, 280);
+    
+    // Reset drawing properties
+    this.ctx.strokeStyle = 'black';
+    this.ctx.lineWidth = 25;
+    
+    this.setState({ prediction: "" });
+  };
+
+  render() {
+    return (
+      <div className="handwriting-container">
+        <canvas 
+          ref={this.canvasRef}
+          width="280" 
+          height="280"
+          onMouseDown={this.handleMouseDown}
+          onMouseMove={this.handleMouseMove}
+          onMouseUp={this.handleMouseUp}
+          onMouseLeave={this.handleMouseUp}
+          onTouchStart={this.handleTouchStart}
+          onTouchMove={this.handleTouchMove}
+          onTouchEnd={this.handleMouseUp}
+        />
+        <div className="controls">
+          <button onClick={this.recognize}>Recognize</button>
+          <button onClick={this.erase}>Erase</button>
+        </div>
+        <div className="prediction">{this.state.prediction}</div>
+      </div>
+    );
+  }
+}
+
+ReactDOM.render(<HandwritingApp />, document.getElementById('root'));
+</script>
+
+<style>
+.handwriting-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+canvas {
+  border: 2px solid #333;
+  background-color: white;
+  touch-action: none;
+  user-select: none;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+.prediction {
+  font-size: 24px;
+  font-weight: bold;
+}
+</style>
